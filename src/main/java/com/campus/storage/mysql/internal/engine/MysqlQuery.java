@@ -3,6 +3,8 @@ package com.campus.storage.mysql.internal.engine;
 import com.campus.system.storage.box.BoxQuery;
 import com.campus.system.storage.filter.*;
 import com.campus.system.storage_annotation.property.Property;
+
+import java.util.Date;
 import java.util.List;
 
 public class MysqlQuery {
@@ -45,16 +47,21 @@ public class MysqlQuery {
     private static String parseFilter(IFilter filter){
         if(filter instanceof BetweenFilter){
             //TODO between语意需要确认
-            return "";
-        }else if(filter instanceof ContainFilter){
-            ContainFilter containFilter = (ContainFilter) filter;
-            return containFilter.getKey() + " like \'%" + containFilter.getValue() + "%\'";
+            BetweenFilter betweenFilter = (BetweenFilter) filter;
+            StringBuilder str = new StringBuilder(betweenFilter.getKey() + " between ");
+            str.append(betweenFilter.getLeft());
+            str.append(" and ");
+            str.append(betweenFilter.getRight());
+            return str.toString();
         }else if(filter instanceof EndWithFilter){
             EndWithFilter endWithFilter = (EndWithFilter) filter;
             return endWithFilter.getKey() + " like \'%" + endWithFilter.getValue() + "\'";
         }else if(filter instanceof StartWithFilter){
             StartWithFilter startWithFilter = (StartWithFilter) filter;
             return startWithFilter.getKey() + " like \'" + startWithFilter.getValue() + "%\'";
+        }else if(filter instanceof ContainsFilter){
+            ContainsFilter containsFilter = (ContainsFilter) filter;
+            return containsFilter.getKey() + " \"%" + containsFilter.getValue() + "%\"";
         }else if(filter instanceof EqualToFilter){
             EqualToFilter equalToFilter = (EqualToFilter) filter;
             Object value = equalToFilter.getValue();
@@ -72,17 +79,51 @@ public class MysqlQuery {
             Object value = greaterThan.getValue();
             return dealNumber(value, greaterThan.getKey(), ">");
         }else if(filter instanceof LessThanEqualToFilter){
-
+            LessThanEqualToFilter lessThanEqualToFilter = (LessThanEqualToFilter) filter;
+            return lessThanEqualToFilter.getKey() + "<=" + lessThanEqualToFilter.getValue();
         }else if(filter instanceof LessThanFilter){
-
+            LessThanFilter lessThanFilter = (LessThanFilter) filter;
+            return lessThanFilter.getKey() + "<" + lessThanFilter.getValue();
         }else if(filter instanceof NearFilter){
 
         }else if(filter instanceof NearWithInKilometersFilter){
 
-        }else if(filter instanceof NotContainFilter){
-
+        }else if(filter instanceof ContainedInFilter){
+            ContainedInFilter containedInFilter = (ContainedInFilter) filter;
+            StringBuilder str = new StringBuilder(containedInFilter.getKey() + " in ");
+            for(int i = 0, n = containedInFilter.getValue().size(); i < n; i++){
+                Object item = containedInFilter.getValue().get(i);
+                if(item instanceof String){
+                    if(i < n - 1){
+                        str.append("\"" + item + "\"");
+                    }else{
+                        str.append("\"" + item + "\" and ");
+                    }
+                }
+            }
+            return str.toString();
+        }else if(filter instanceof NotContainedInFilter){
+            NotContainedInFilter notContainedInFilter = (NotContainedInFilter) filter;
+            StringBuilder str = new StringBuilder(notContainedInFilter.getKey() + " not in ");
+            for(int i = 0, n = notContainedInFilter.getValue().size(); i < n; i++){
+                Object item = notContainedInFilter.getValue().get(i);
+                if(item instanceof String){
+                    if(i < n - 1){
+                        str.append("\"" + item + "\"");
+                    }else{
+                        str.append("\"" + item + "\" and ");
+                    }
+                }
+            }
+            return str.toString();
         }else if(filter instanceof NotEqualToFilter){
-
+            EqualToFilter equalToFilter = (EqualToFilter) filter;
+            Object value = equalToFilter.getValue();
+            if(value instanceof String){
+                return equalToFilter.getKey() + "!=\'" + value + "\'";
+            }else{
+                return dealNumber(value, equalToFilter.getKey(), "!=");
+            }
         }
 
         return " ";
