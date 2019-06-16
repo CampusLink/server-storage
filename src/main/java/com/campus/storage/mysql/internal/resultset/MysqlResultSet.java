@@ -25,7 +25,7 @@ public class MysqlResultSet extends ResultSet {
     }
 
     public Date getDate(int i) throws SQLException{
-        return new Date(mResultSet.getLong(i));
+        return new Date(mResultSet.getDate(i).getTime());
     }
 
     public double getDouble(int i) throws SQLException{
